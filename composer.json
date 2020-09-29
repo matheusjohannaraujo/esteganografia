@@ -1,0 +1,20 @@
+{
+    "require": {
+        "php": "^7.2",
+        "illuminate/events": "7.28.3",
+        "illuminate/database": "7.28.3",
+        "illuminate/support": "7.28.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "Lib\\" : "lib/",
+            "App\\" : "app/"
+        },
+        "files": [
+            "lib/functions.php"
+        ]
+    },
+    "scripts": {
+        "git-hub": "git init && git remote add origin https://github.com/matheusjohannaraujo/makemvcss.git && git add . && git status && git commit -m \"Publicando o framework MakeMVCSS | Publishing the MakeMVCSS framework\" && git push -u origin master -f"
+    }
+}
