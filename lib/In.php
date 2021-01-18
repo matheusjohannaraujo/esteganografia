@@ -5,12 +5,13 @@
 	Country: Brasil
 	State: Pernambuco
 	Developer: Matheus Johann Araujo
-	Date: 2020-06-23
+	Date: 2021-01-09
 */
 
 namespace Lib;
 
-use Lib\JsonWT;
+use Lib\ENV;
+use Lib\JWT;
 
 class In
 {
@@ -52,7 +53,7 @@ class In
         return $headers;
     }
 
-    private function setJsonWT()
+    private function setJWT()
     {
         $headers = $this->headerAuthorization();
         // HEADER: Get the access token from the header
@@ -64,99 +65,56 @@ class In
             $this->auth = $this->paramReq("_jwt", $this->paramJson("_jwt", ""));
         }
         if ($this->auth) {
-            $this->jwt = new JsonWT($this->auth);
-            $this->jwt->secret($this->paramEnv("JWT_SECRET"));
-            $this->jwt->valid();
+            $this->jwt = new JWT($this->auth);
         } else {
-            $this->auth = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJsb2NhbGhvc3QiLCJzdWIiOiJBdXRoIEpXVCBTeXN0ZW0iLCJhdWQiOiJjbGllbnQiLCJleHAiOjE1ODg5NjY3OTAsIm5iZiI6MTU4ODk2MzE5MCwiaWF0IjoxNTg4OTYzMTkwLCJqdGkiOiI1ZWI1YTc3NjMxNTZhIiwibmFtZSI6IkpXVENsYXNzIn0=.T7ty+OSJ7tsbtQlTsUpyY5feYeTPpYH/kWrGW/1tg2I=";
-            $this->jwt = new JsonWT($this->auth);
+            $this->auth = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJsb2NhbGhvc3QiLCJzdWIiOiJKV1QgQ3JlZGVudGlhbCAjNWZmOWM4ZTQ1ODhiYyIsImF1ZCI6ImNsaWVudCIsImV4cCI6MTYxMDIwNzIxMiwibmJmIjoxNjEwMjA1NDEyLCJpYXQiOjE2MTAyMDU0MTIsImp0aSI6IjVmZjljOGU0NTg4YmMiLCJuYW1lIjoiTWFrZU1WQ1NTIn0.h8X8ojsU9ggjoDo01poxX9KhfekPFKhekswOHWQm3aY";
+            $this->jwt = new JWT($this->auth);
         }
+        $this->jwt->valid();
         return $this;
     }
 
     private function setEnv()
     {
-        $env = [];
-        $path_env = __DIR__ . "/../.env";
-        if (!DataManager::exist($path_env)) {
-            dumpd("The `.env` file was not found.");
-        }
-        DataManager::fileRead($path_env, 4, function($key, $value) use (&$env) {
-            $value = trim($value);
-            if ($value != "") {
-                $value = explode("=", $value);
-                if (count($value) == 2) {
-                    $value[0] = trim($value[0]);
-                    $value[1] = trim($value[1]);
-                    if (strlen($value[0]) > 0 && $value[0][0] != "#") {
-                        switch (strtolower($value[1])) {
-                            case "false":
-                                $value[1] = false;
-                                break;
-                            case "true":
-                                $value[1] = true;
-                                break;
-                            case "null":
-                                $value[1] = null;
-                                break;
-                        }
-                        $env[$value[0]] = $value[1];
-                    }
-                }
-            }        
-        });    
-        $_ENV = array_merge($env, $_ENV);
-        $env_keys_required = [
-            "ENV",
-            "CSRF_REGENERATE",
-            "JWT_SECRET",
-            "DB_CONNECTION",
-            // "DB_HOST",
-            // "DB_PORT",
-            // "DB_CHARSET",
-            // "DB_CHARSET_COLLATE",
-            // "DB_USERNAME",
-            // "DB_PASSWORD",
-            "DB_DATABASE"
-        ];
-        $env_keys = array_keys($_ENV);
-        foreach ($env_keys_required as $key) {        
-            if (!in_array($key, $env_keys)) {
-                dumpd("The definition of `$key` was not found in the `.env` file");
-            }
-        }
-        $this->env = &$_ENV;
+        $env = new ENV;
+        $env->read();
+        $env->required();
+        $this->env = $env->merge();
         return $this;
     }
 
-    public function setArg(&$value)
+    public function setArg(array &$value)
     {
         $this->arg = $value;
         return $this;
     }
 
-    public function setReq(&$value)
+    public function setReq(array &$value)
     {
         $this->req = $value;
         return $this;
     }
 
-    public function setGet(&$value)
+    public function setGet(array &$value)
     {
         $this->get = $value;
         return $this;
     }
 
-    public function setPost(&$value)
+    public function setPost(array &$value)
     {
         $this->post = $value;
         return $this;
     }
 
+    public function contentTypeIsJSON()
+    {
+        return ($this->server['CONTENT_TYPE'] ?? '') == 'application/json';
+    }
+
     public function setJson()
     {
-        $content_type = $this->server['CONTENT_TYPE'] ?? '';
-        if ($content_type == 'application/json') {
+        if ($this->contentTypeIsJSON()) {
             $putData = @fopen("php://input", "r");
             if ($putData) {
                 $this->json = "";
@@ -178,7 +136,7 @@ class In
                 $this->json = [];
             }
         }
-        $this->setJsonWT();
+        $this->setJWT();
         return $this;
     }
 
@@ -208,14 +166,14 @@ class In
         }
     }
 
-    public function setFile(&$value)
+    public function setFile(array &$value)
     {
         $this->file = $value;
         $this->procFiles();
         return $this;
     }
 
-    public function setServer(&$value)
+    public function setServer(array &$value)
     {
         $this->server = $value;
         return $this;

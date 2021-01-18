@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Service;
+namespace App\Services;
         
-use App\Service\ConverterService as Converter;
+use App\Services\ConverterService as Converter;
 
 class ImageService
 {

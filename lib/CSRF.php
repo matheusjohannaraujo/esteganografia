@@ -5,7 +5,7 @@
 	Country: Brasil
 	State: Pernambuco
 	Developer: Matheus Johann Araujo
-	Date: 2020-06-23
+	Date: 2020-10-13
 */
 
 namespace Lib;
@@ -15,15 +15,17 @@ use Lib\Route;
 class CSRF
 {
 
-    public static function create(){
-        $_SESSION["_csrf"] = hash("sha256", uniqid() . "_simple_mvcs_" . uniqid());
+    public static function create()
+    {
+        session()->set("_csrf", hash("sha256", uniqid() . "_MakeMVCSS_" . uniqid()));
     }
     
-    public static function get(){
-        if (!isset($_SESSION["_csrf"])) {
+    public static function get()
+    {
+        if (!session()->has("_csrf")) {
             self::create();
         }
-        return $_SESSION["_csrf"];
+        return session()->get("_csrf");
     }
     
     public static function valid($csrf = false)

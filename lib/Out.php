@@ -5,11 +5,12 @@
 	Country: Brasil
 	State: Pernambuco
 	Developer: Matheus Johann Araujo
-	Date: 2020-09-29
+	Date: 2020-11-23
 */
 
 namespace Lib;
 
+use Lib\Cache;
 use Lib\DataManager;
 use Lib\AVStreamDataManager;
 
@@ -26,7 +27,8 @@ class Out
     private $size = 0;
     private $kill = true;
     private $delay = 0;
-    private $bitrate = 1000000;// 1Mb
+    private $bitrate = 500000;// 500kb
+    // private $bitrate = 1000000;// 1Mb
     private $contentDescription = "File Transfer";
     private $contentTransferEncoding = "binary";
     private $connection = "Keep-Alive";
@@ -84,8 +86,32 @@ class Out
         return $this;
     }
 
+    private $cache = null;
+    private $recordCache = false;
+
+    public function cache(string $name, int $time)
+    {
+        $this->cache = new Cache;
+        $hasCache = $this->cache->exist($name, $time);
+        if ($hasCache) {
+            $location = $this->cache->get_paths($name);
+            $mimetype = $this->cache->env()->get("CONTENT_TYPE");
+            if ($mimetype !== null) {
+                $this->mimetype($mimetype);
+            }
+            $this
+                ->fopen($location["content"])
+                ->go();
+        } else {
+            $this->recordCache = $this->cache->init($name, $time);
+        }
+    }
+
     public function content($value)
     {
+        if ($value === null) {
+            $value = "";
+        }
         $this->content = $value;
         if (is_object($this->content)) {
             $this->content = parse_array_object_to_array(object_to_array($this->content));
@@ -187,8 +213,16 @@ class Out
 
     public function streamText()
     {
+        if ($this->recordCache) {
+            $info = $this->cache->info();
+            $info["CONTENT_TYPE"] = $this->mimetype;
+            $this->cache->info($info);
+        }
         for ($i = 0; $i < $this->size; $i += $this->bitrate) {
-            print substr($this->content, $i, $this->bitrate);
+            if ($this->recordCache) {
+                $this->cache->append(substr($this->content, $i, $this->bitrate));
+            }
+            print(substr($this->content, $i, $this->bitrate));
             flush();
             if ($this->delay > 0) {
                 usleep($this->delay);
@@ -199,7 +233,7 @@ class Out
     public function streamFile()
     {
         while (!$this->dataManager->feof()) {
-            print $this->dataManager->fread($this->bitrate);
+            print($this->dataManager->fread($this->bitrate));
             flush();
             if ($this->delay > 0) {
                 usleep($this->delay);
@@ -221,21 +255,20 @@ class Out
         $filename = iconv("UTF-8", "ISO-8859-1", $this->filename . $this->extension);
         switch ($this->download) {
             case 1:
-                $this->header("Content-Type", $this->mimetype);
                 $this->header("Content-Disposition", 'attachment; filename="' . $filename . '"');
                 break;
             case 2:
-                $this->header("Content-Type", "application/octet-stream");
-                // $this->header("Content-Type", "application/force-download");
-                // $this->header("Content-Type", "application/download");
                 $this->header("Content-Disposition", 'attachment; filename="' . $filename . '"');
+                $this->mimetype = "application/octet-stream";
+                // $this->mimetype = "application/force-download";
+                // $this->mimetype = "application/download";
                 break;
             default:
                 // No Download
-                $this->header("Content-Type", $this->mimetype);
                 $this->header("Content-Disposition", 'inline; filename="' . $filename . '"');
                 break;
         }
+        $this->header("Content-Type", $this->mimetype);
         $this->header("Content-Description", $this->contentDescription);
         $this->header("Content-Transfer-Encoding", $this->contentTransferEncoding);
         $this->header("Connection", $this->connection);
@@ -247,7 +280,8 @@ class Out
         foreach ($this->header as $value) {
             @header($value);
         }
-        ob_clean();
+        if (ob_get_length() > 0)
+            ob_clean();
         flush();
     }
 
@@ -275,34 +309,61 @@ class Out
 
     public function page404()
     {
-        $this->content(view("page_message", [
-            "title" => "404 - NOT FOUND",
-            "body" => "<h1>STATUS CODE: 404 - NOT FOUND</h1>
-            <marquee behavior=\"alternate\"><h1>Sorry, an error has occured, Requested page not found!</h1></marquee>",
-        ], true))
+        if (input()->contentTypeIsJSON()) {
+            $this->content([
+                "error" => "NOT FOUND",
+                "status" => 404,
+                "message" => "Sorry, an error has occured, Requested page not found!"
+            ]);
+        } else {
+            $this->content(view("page_message", [
+                "title" => "404 - NOT FOUND",
+                "body" => "<h1>STATUS CODE: 404 - NOT FOUND</h1>
+                <marquee behavior=\"alternate\"><h1>Sorry, an error has occured, Requested page not found!</h1></marquee>",
+            ]));
+        }
+        $this
             ->status(404)
             ->go();
     }
 
     public function pageCSRF()
     {
-        $this->content(view("page_message", [
-            "title" => "403 - CSRF UNAUTHORIZED",
-            "body" => "<h1>STATUS CODE: 403 - CSRF UNAUTHORIZED</h1>
-            <marquee behavior=\"alternate\"><h1>Sorry, an error occurred. The CSRF Token informed is not valid!</h1></marquee>",
-        ], true))
+        if (input()->contentTypeIsJSON()) {
+            $this->content([
+                "error" => "CSRF FORBIDDEN",
+                "status" => 403,
+                "message" => "Sorry, an error occurred. The CSRF Token informed is not valid!"
+            ]);
+        } else {
+            $this->content(view("page_message", [
+                "title" => "403 - CSRF FORBIDDEN",
+                "body" => "<h1>STATUS CODE: 403 - CSRF FORBIDDEN</h1>
+                <marquee behavior=\"alternate\"><h1>Sorry, an error occurred. The CSRF Token informed is not valid!</h1></marquee>",
+            ]));
+        }
+        $this
             ->status(403)
             ->go();
     }
 
     public function pageJWT()
     {
-        $this->content(view("page_message", [
-            "title" => "403 - JWT UNAUTHORIZED",
-            "body" => "<h1>STATUS CODE: 403 - JWT UNAUTHORIZED</h1>
-            <marquee behavior=\"alternate\"><h1>Sorry, an error occurred. The JWT Token informed is not valid!</h1></marquee>",
-        ], true))
-            ->status(403)
+        if (input()->contentTypeIsJSON()) {
+            $this->content([
+                "error" => "JWT UNAUTHORIZED",
+                "status" => 401,
+                "message" => "Sorry, an error occurred. The JWT Token informed is not valid!"
+            ]);
+        } else {
+            $this->content(view("page_message", [
+                "title" => "401 - JWT UNAUTHORIZED",
+                "body" => "<h1>STATUS CODE: 401 - JWT UNAUTHORIZED</h1>
+                <marquee behavior=\"alternate\"><h1>Sorry, an error occurred. The JWT Token informed is not valid!</h1></marquee>",
+            ]));
+        }
+        $this
+            ->status(401)
             ->go();
     }
 

@@ -5,7 +5,7 @@
 	Country: Brasil
 	State: Pernambuco
 	Developer: Matheus Johann Araujo
-	Date: 2020-06-23
+	Date: 2020-10-04
 */
 
 namespace Lib;
@@ -67,7 +67,13 @@ class URI
         return self::$finalBase;
     }
 
-    public static function public($file)
+    public static function site($file = "")
+    {
+        return self::base() . "$file";
+        // return self::base() . $file;
+    }
+
+    public static function public($file = "")
     {
         return self::base() . "public/$file";
         // return self::base() . $file;
@@ -75,13 +81,13 @@ class URI
     
     public static function css($file)
     {
-        $ext = isset(pathinfo($file)["extension"]) ? "" : ".css";
+        $ext = ((pathinfo($file)["extension"] ?? null) == "css") ? "" : ".css";
         return self::public("css/$file$ext");
     }
     
     public static function js($file)
     {
-        $ext = isset(pathinfo($file)["extension"]) ? "" : ".js";
+        $ext = ((pathinfo($file)["extension"] ?? null) == "js") ? "" : ".js";
         return self::public("js/$file$ext");
     }
     

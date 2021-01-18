@@ -24,7 +24,6 @@
     <?= tag_css("bootstrap.min.css"); ?>
     <?= tag_js("bootstrap.min.js"); ?>
     <?= tag_js("bootstrap.bundle.min.js"); ?>
-    <?= tag_js("index.js"); ?>
 </head>
 <body class="bg-dark p-3">
     <div class="container bg-white pt-3 pb-3 rounded">

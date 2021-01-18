@@ -3,7 +3,7 @@
 Country: Brasil<br>
 State: Pernambuco<br>
 Developer: Matheus Johann Araújo<br>
-Date: 2020-09-28<br>
+Date: 2021-01-18<br>
 
 Oculta ou mostra o texto contido em uma imagem. Aplicação construída com [PHP](https://www.php.net/manual/pt_BR/intro-whatis.php), [MakeMVCSS](https://github.com/matheusjohannaraujo/makemvcss) e [Biblioteca GD](https://www.php.net/manual/pt_BR/book.image.php)
 
