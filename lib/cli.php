@@ -5,7 +5,7 @@
 	Country: Brasil
 	State: Pernambuco
 	Developer: Matheus Johann Araujo
-	Date: 2021-01-01
+	Date: 2021-05-23
 */
 
 define("CLI", true);
@@ -56,25 +56,25 @@ function fun_test_routes()
     echo "\r\n";
     fun_test_route("/public/js/index.js", "1f28a6e549918674d6dc814c2cc87480", $baseDomain . "/public/js/index.js");
     echo "\r\n";
-    fun_test_route("Home", "b191fb28917e5334721f3bc9cf072df8", $baseDomain . "/");
+    fun_test_route("/", "9d99ab58f34bfb46a476055b1c23e6ab", $baseDomain . "/");
     echo "\r\n";
-    fun_test_route("Route 1", "9fa1607438b6c5ad684e682447eb1c6f", $baseDomain . "/contact");
+    fun_test_route("/template", "a617a1a108e1501398baec11cdcfc947", $baseDomain . "/template");
     echo "\r\n";
-    fun_test_route("Route 2", "a617a1a108e1501398baec11cdcfc947", $baseDomain . "/template");
+    fun_test_route("/json", "c372e4a0e7030dcc334c53dbe74e95f7", $baseDomain . "/json");
     echo "\r\n";
-    fun_test_route("Route 3", "c372e4a0e7030dcc334c53dbe74e95f7", $baseDomain . "/json");
+    fun_test_route("/auth", "c7b55c93fbffa43912d8c0a46bf72ee1", $baseDomain . "/auth");
     echo "\r\n";
-    fun_test_route("Route 4", "9279014f262dcff5c9fa50283e1c3c7a", $baseDomain . "/auth");
+    fun_test_route("/jwt", "4ac340b1ea55ad5426f0fd9335b98bd1", $baseDomain . "/jwt");
     echo "\r\n";
-    fun_test_route("Route 5", "2cf1ea5adb3209dacdf0d80d50659c5e", $baseDomain . "/jwt");
+    fun_test_route("/math/add/3/5", "f07ec6620f6e1893f5babbd51829ba7d", $baseDomain . "/math/add/3/5");
     echo "\r\n";
-    fun_test_route("Route 6", "52c761fef871620b5f6c537552671825", $baseDomain . "/text");
+    fun_test_route("/api/v1/text", "52c761fef871620b5f6c537552671825", $baseDomain . "/api/v1/text");
     echo "\r\n";
-    fun_test_route("Route 7", "aa08e10eb9b3c8424429cf15fe8e2fe6", $baseDomain . "/video/stream");
+    fun_test_route("/api/v1/video", "aa08e10eb9b3c8424429cf15fe8e2fe6", $baseDomain . "/api/v1/video");
     echo "\r\n";
-    fun_test_route("Route 8", "aa08e10eb9b3c8424429cf15fe8e2fe6", $baseDomain . "/video");
+    fun_test_route("/api/v1/video/stream", "aa08e10eb9b3c8424429cf15fe8e2fe6", $baseDomain . "/api/v1/video/stream");
     echo "\r\n";
-    fun_test_route("Route 9", "f07ec6620f6e1893f5babbd51829ba7d", $baseDomain . "/math/add/3/5");
+    fun_test_route("/contact", "41cdf995d47aa5229674094d39fa7788", $baseDomain . "/contact");
 }
 
 function fun_create_app_file(string $class, string $content, string $pathFile)
@@ -433,7 +433,14 @@ function fun_clean_simple_mvcs()
     fun_folder_denied($basedir . "${folderServiceName}/");
     DataManager::folderCreate($basedir . "${folderViewName}");
     fun_folder_denied($basedir . "${folderViewName}/");
-    DataManager::fileWrite($basedir . "common.php", "<?php\r\n\r\n");
+    DataManager::fileWrite($basedir . "common.php", "<?php\r\n
+const __I18N__ = [
+    \"hello\" => [
+        \"en-us\" => \"Hello\",
+        \"pt-br\" => \"Olá\"
+    ]
+];
+");
     DataManager::fileWrite($basedir . "${folderViewName}/page_message.php", "<!DOCTYPE html>
 <html lang='pt-BR'>
 <head>
@@ -465,9 +472,9 @@ function fun_clean_simple_mvcs()
 
 use Lib\Route;
 
-Route::get(\"/\", function(){	
-	dumpd(\"Welcome\", input());
-})::name(\"home.index\");
+Route::get(\"/\", function() {
+    return \"<h1>Hello World</h1>\";
+});
 
 Route::on();
 ");
@@ -514,6 +521,9 @@ Disallow:
 function fun_update_project()
 {
     $folderActual = DataManager::path(realpath(__DIR__ . "/../"));
+    if (DataManager::exist($folderActual . ".git") == "FOLDER") {        
+        exit(shell_exec("cd $folderActual && git pull"));
+    }
     $folderUpdate = DataManager::path($folderActual . "makemvcss-master/");
     echo "\r\n";
     echo cli_text_color(" Dir actual: " . $folderActual);
@@ -559,20 +569,24 @@ function fun_list_commands()
     $folderControllerName = input_env("NAME_FOLDER_CONTROLLERS");
     $version_actual = input_env("VERSION", "very old");
     $env = new ENV;    
-    $env->read("https://raw.githubusercontent.com/matheusjohannaraujo/makemvcss/master/.env");
+    $env->read("https://raw.githubusercontent.com/matheusjohannaraujo/makemvcss/master/.env.example");
     $version_latest = $env->get("VERSION", "not found");
     echo "
  ###################################################################################################################
+ #
+ # " . cli_text_color("MakeMVCSS - A simple and complete PHP framework, thought and designed by Matheus Johann Araújo", "blue") . "
+ #
+ # -----------------------------------------------------------------------------------------------------------------  
  #
  # The local version of the MakeMVCSS framework is " . cli_text_color("`$version_actual`", "red") . " and the remote version is " . cli_text_color("`$version_latest`") . "
  #
  # Version: " . cli_text_color("`$version_actual`", "red") . " -> " . cli_text_color("`$version_latest`") . "
  #
- # To update the core of the framework, use the command " . cli_text_color("`php adm update`", "cyan") . "
+ # To update the core of the framework, use the command " . cli_text_color("`php adm update`", "yellow") . "
  #
  ###################################################################################################################
- 
- COMMAND COMPLETE        | COMMAND MINIFIED   | DESCRIPTION
+ " . cli_text_color("
+ COMMAND COMPLETE        | COMMAND MINIFIED   | DESCRIPTION", "purple") . "
  -------------------------------------------------------------------------------------------------------------------
  php adm help            | php adm h          | List all commands
  -------------------------------------------------------------------------------------------------------------------
@@ -595,7 +609,7 @@ function fun_list_commands()
  -------------------------------------------------------------------------------------------------------------------
  php adm view test       | php adm v test     | Creates a file inside the folder \"app/${folderViewName}/test.php\"
  -------------------------------------------------------------------------------------------------------------------
- php adm update          | php adm u          | Updates the core framework 
+ php adm update          | php adm u          | Updates the core framework
  -------------------------------------------------------------------------------------------------------------------
  php adm test            | php adm t          | Testing the default routes
  -------------------------------------------------------------------------------------------------------------------

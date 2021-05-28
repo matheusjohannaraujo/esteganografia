@@ -35,16 +35,22 @@
             </div>
         </a>
         <hr>
-        <div class="alert alert-info" role="alert">
+        <div class="alert alert-dark" role="alert">
             <a href="https://github.com/matheusjohannaraujo/esteganografia" target="_blank" class="alert-link">Link do projeto no GitHub</a>
         </div>
-        <hr>        
+        <hr>
+        <div class="input-group">
+
+    </div>
         <h5 class="mb-3">Esconde um texto dentro de uma imagem</h5>
         <form class="bg-dark text-white p-3 rounded" action="<?= action("main.hide_message_in_image"); ?>" method="post" enctype="multipart/form-data">
-            <?= tag_csrf(); ?>            
+            <?= tag_csrf(); ?>
             <div class="form-group">
                 <label for="image">Imagem:</label>
-                <input class="form-control-file" type="file" name="image" id="image" accept="image/*" required>
+                <div class="custom-file">
+                    <input type="file" class="custom-file-input" name="image" id="image" accept="image/*" required>
+                    <label class="custom-file-label bg-secondary text-light" style="overflow: hidden;" for="image">Clique aqui e selecione o arquivo para upload</label>
+                </div>
             </div>
             <div class="form-group">
                 <label for="message">Mensagem:</label>
@@ -55,11 +61,14 @@
         </form>
         <hr>
         <h5 class="mb-3">Mostra o texto contido dentro de uma imagem</h5>
-        <form class="bg-dark text-light p-3 rounded" action="<?= action("main.show_message_in_image"); ?>" method="post" enctype="multipart/form-data">
+        <form class="bg-dark text-light p-3 rounded form2" action="<?= action("main.show_message_in_image"); ?>" method="post" enctype="multipart/form-data">
             <?= tag_csrf(); ?>
             <div class="form-group">
                 <label for="image">Imagem:</label>
-                <input class="form-control-file" type="file" name="image" id="image" accept="image/png" required>
+                <div class="custom-file">
+                    <input type="file" class="custom-file-input" name="image" id="image" accept="image/png" required>
+                    <label class="custom-file-label bg-secondary text-light" style="overflow: hidden;" for="image">Clique aqui e selecione o arquivo para upload</label>
+                </div>
             </div>
             <div class="form-group">
                 <label>Mensagem:</label>
@@ -68,6 +77,18 @@
             </div>
             <input class="btn btn-primary" type="submit" value="Mostrar">
         </form>
+        <script>
+            window.addEventListener("load", function(){
+                const form2 = document.querySelector(".form2");
+                const inputFile = form2.querySelector("input[type='file']");
+                inputFile.addEventListener("change", function() {
+                    if (inputFile.files.length === 1) {
+                        window.alert("Mostrando o texto contido dentro de uma imagem");
+                        form2.submit();
+                    }
+                });                
+            });        
+        </script>
     </div>    
 </body>
 </html>

@@ -5,7 +5,7 @@
 	Country: Brasil
 	State: Pernambuco
 	Developer: Matheus Johann Araujo
-	Date: 2020-11-23
+	Date: 2021-03-28
 */
 
 namespace Lib;
@@ -28,7 +28,6 @@ class Out
     private $kill = true;
     private $delay = 0;
     private $bitrate = 500000;// 500kb
-    // private $bitrate = 1000000;// 1Mb
     private $contentDescription = "File Transfer";
     private $contentTransferEncoding = "binary";
     private $connection = "Keep-Alive";
@@ -46,37 +45,37 @@ class Out
         $this->dataManager = new DataManager;
     }
 
-    public function status($value)
+    public function status(int $value)
     {
         $this->status = $value;
         return $this;
     }
 
-    public function download($value)
+    public function download(int $value)
     {
         $this->download = $value;
         return $this;
     }
 
-    public function filename($value)
+    public function filename(string $value)
     {
         $this->filename = $value;
         return $this;
     }
 
-    public function extension($value)
+    public function extension(string $value)
     {
         $this->extension = $value;
         return $this;
     }
 
-    public function mimetype($value)
+    public function mimetype(string $value)
     {
         $this->mimetype = $value;
         return $this;
     }
 
-    public function name($value)
+    public function name(string $value)
     {
         $this->name = $value;
         $value = pathinfo($value);
@@ -89,10 +88,10 @@ class Out
     private $cache = null;
     private $recordCache = false;
 
-    public function cache(string $name, int $time)
+    public function cache(string $name, int $time_seconds)
     {
         $this->cache = new Cache;
-        $hasCache = $this->cache->exist($name, $time);
+        $hasCache = $this->cache->exist($name, $time_seconds);
         if ($hasCache) {
             $location = $this->cache->get_paths($name);
             $mimetype = $this->cache->env()->get("CONTENT_TYPE");
@@ -103,7 +102,7 @@ class Out
                 ->fopen($location["content"])
                 ->go();
         } else {
-            $this->recordCache = $this->cache->init($name, $time);
+            $this->recordCache = $this->cache->init($name, $time_seconds);
         }
     }
 
@@ -124,25 +123,25 @@ class Out
         return $this;
     }
 
-    public function size($value)
+    public function size(int $value)
     {
         $this->size = $value;
         return $this;
     }
 
-    public function kill($value)
+    public function kill(bool $value)
     {
         $this->kill = $value;
         return $this;
     }
 
-    public function delay($value)
+    public function delay(int $value)
     {
         $this->delay = $value;
         return $this;
     }
 
-    public function bitrate($value)
+    public function bitrate(int $value)
     {
         $this->bitrate = $value;
         return $this;
@@ -163,49 +162,49 @@ class Out
         return $this;
     }
 
-    public function stream($value)
+    public function stream(int $value)
     {
         $this->stream = $value;
         return $this;
     }
 
-    public function header($key, $value)
+    public function header(string $key, string $value)
     {
         $this->header[] = "$key: $value";
         return $this;
     }
 
-    public function contentDescription($value)
+    public function contentDescription(string $value)
     {
         $this->contentDescription = $value;
         return $this;
     }
 
-    public function contentTransferEncoding($value)
+    public function contentTransferEncoding(string $value)
     {
         $this->contentTransferEncoding = $value;
         return $this;
     }
 
-    public function connection($value)
+    public function connection(string $value)
     {
         $this->connection = $value;
         return $this;
     }
 
-    public function expires($value)
+    public function expires(string $value)
     {
         $this->expires = $value;
         return $this;
     }
 
-    public function cacheControl($value)
+    public function cacheControl(string $value)
     {
         $this->cacheControl = $value;
         return $this;
     }
 
-    public function pragma($value)
+    public function pragma(string $value)
     {
         $this->pragma = $value;
         return $this;
@@ -285,7 +284,7 @@ class Out
         flush();
     }
 
-    public function go($value = false)
+    public function go(bool $value = false)
     {
         if ($value) {
             $this->stream(2);
@@ -304,6 +303,20 @@ class Out
         }
         if ($this->kill) {
             die();
+        }
+    }
+
+    public function page(int $status_code)
+    {
+        switch ($status_code) {
+            case 401:
+                $this->pageJWT();
+            case 403:
+                $this->pageCSRF();
+            case 404:
+                $this->page404();
+            case 405:
+                $this->page405();
         }
     }
 
@@ -327,6 +340,26 @@ class Out
             ->go();
     }
 
+    public function page405()
+    {
+        if (input()->contentTypeIsJSON()) {
+            $this->content([
+                "error" => "METHOD NOT ALLOWED",
+                "status" => 405,
+                "message" => "Sorry, an error has occured, Requested page not found!"
+            ]);
+        } else {
+            $link = action("message-status-code", 404);
+            $this->content(view("page_message", [
+                "title" => "405 - METHOD NOT ALLOWED",
+                "body" => "<h1>STATUS CODE: 405 - METHOD NOT ALLOWED</h1><marquee behavior=\"alternate\"><h1>Sorry, an error occurred, the method entered was not found!</h1></marquee>"
+            ]));
+        }
+        $this
+            ->status(405)
+            ->go();
+    }
+
     public function pageCSRF()
     {
         if (input()->contentTypeIsJSON()) {
@@ -338,8 +371,7 @@ class Out
         } else {
             $this->content(view("page_message", [
                 "title" => "403 - CSRF FORBIDDEN",
-                "body" => "<h1>STATUS CODE: 403 - CSRF FORBIDDEN</h1>
-                <marquee behavior=\"alternate\"><h1>Sorry, an error occurred. The CSRF Token informed is not valid!</h1></marquee>",
+                "body" => "<h1>STATUS CODE: 403 - CSRF FORBIDDEN</h1><marquee behavior=\"alternate\"><h1>Sorry, an error occurred. The CSRF Token informed is not valid!</h1></marquee>"
             ]));
         }
         $this
@@ -358,8 +390,7 @@ class Out
         } else {
             $this->content(view("page_message", [
                 "title" => "401 - JWT UNAUTHORIZED",
-                "body" => "<h1>STATUS CODE: 401 - JWT UNAUTHORIZED</h1>
-                <marquee behavior=\"alternate\"><h1>Sorry, an error occurred. The JWT Token informed is not valid!</h1></marquee>",
+                "body" => "<h1>STATUS CODE: 401 - JWT UNAUTHORIZED</h1><marquee behavior=\"alternate\"><h1>Sorry, an error occurred. The JWT Token informed is not valid!</h1></marquee>"
             ]));
         }
         $this

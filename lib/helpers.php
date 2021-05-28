@@ -5,7 +5,7 @@
 	Country: Brasil
 	State: Pernambuco
 	Developer: Matheus Johann Araujo
-	Date: 2021-01-09
+	Date: 2021-04-17
 */
 
 use Lib\AES_256;
@@ -95,7 +95,7 @@ function max_requests_per_minute(int $num_requests, string $name_request)
  * 
  * @return object In
  */
-function input()
+function input() :\Lib\In
 {
     return Route::$in;
 }
@@ -112,7 +112,7 @@ function input()
  * 
  * @return object Out
  */
-function output()
+function output() :\Lib\Out
 {
     return Route::$out;
 }
@@ -432,12 +432,12 @@ function message(string $key = null, $value = null)
  * 
  * @param string $file
  * @param array $args [optional]
- * @param int $cache [optional]
+ * @param int $cache_seconds [optional]
  * @return string
  */
-function view(string $file, $args = [], int $cache = -1)
+function view(string $file, $args = [], int $cache_seconds = -1)
 {
-    return (new View)->template($file, $args, $cache);
+    return (new View)->template($file, $args, $cache_seconds);
 }
 
 /**
@@ -726,78 +726,6 @@ function folder_storage(string $path = "")
 
 /**
  * 
- * **Function -> var_export_format**
- *
- * EN-US: Returns the output of a pre-formatted `var_export`.
- * 
- * PT-BR: Retorna a saída de um `var_export` pré-formatado.
- * 
- * @param mixed &$data [reference variable]
- * @return string
- */
-function var_export_format(&$data)
-{
-    $dump = var_export($data, true);
-    $dump = preg_replace('#(?:\A|\n)([ ]*)array \(#i', '[', $dump); // Starts
-    $dump = preg_replace('#\n([ ]*)\),#', "\n$1],", $dump); // Ends
-    $dump = preg_replace('#=> \[\n\s+\],\n#', "=> [],\n", $dump); // Empties
-    if (gettype($data) == 'object') { // Deal with object states
-        $dump = str_replace('__set_state(array(', '__set_state([', $dump);
-        $dump = preg_replace('#\)\)$#', "])", $dump);
-    } else {
-        $dump = preg_replace('#\)$#', "]", $dump);
-    }
-    return $dump;
-}
-
-/**
- * 
- * **Function -> dumpl**
- *
- * EN-US: Prints on the screen the values ​​that were passed in the parameters.
- * 
- * PT-BR: Imprime na tela os valores que foram passados ​​nos parâmetros.
- * 
- * @param mixed ...$params [optional]
- * @return null
- */
-function dumpl(...$params)
-{
-    // $params = func_get_args();
-    $style = "font-weight:bolder;font-size:1.2em;color:#ccc;background:#333;border-radius:3px;padding:15px;margin:0;display:inline-block;";
-    if (!empty($params) > 0) {
-        echo !defined('CLI') ? "\r\n<hr/>\r\n" : "";
-    }    
-    foreach ($params as $key => $value) {
-        echo !defined('CLI') ? "<pre style=\"${style}\">\r\n" : "";
-        echo var_export_format($value);
-        echo !defined('CLI') ? "\r\n</pre>\r\n<hr/>\r\n" : "";
-        unset($params[$key]);
-    }
-    unset($params);
-}
-
-/**
- * 
- * **Function -> dumpd**
- *
- * EN-US: Print the values ​​that were passed in the parameters
- * on the screen and end the execution of the php code.
- * 
- * PT-BR: Imprime os valores que foram passados ​​nos parâmetros
- * na tela e finaliza a execução do código php.
- * 
- * @param mixed ...$params [optional]
- * @return null
- */
-function dumpd(...$params)
-{
-    dumpl(...$params);
-    die();
-}
-
-/**
- * 
  * **Function -> object_to_array**
  *
  * EN-US: Returns the conversion of an object to an array.
@@ -892,32 +820,40 @@ function decamelize(string $text)
  *
  * **Function -> base64_url_encode**
  *
- * EN-US: Converts a string to base64 and removes invalid characters from `base64_encode`, allowing the encoded string to be used in a URL.
+ * EN-US: Returns `Base64Url` encoded text that can be passed in the `URL`.
  *
- * PT-BR: Converte uma string para base64 e remove os caracteres inválidos do `base64_encode`, permitindo que a string encodada possa ser utilizada em uma URL.
+ * PT-BR: Retorna texto codificado em `Base64Url` que pode ser passado no `URL`.
  *
- * @param string $input
+ * @param string $data
  * @return string
  */
-function base64_url_encode(string $input) :string
+function base64_url_encode(string $data): string
 {
-    return str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($input));
+    return str_replace("=", "", strtr(base64_encode($data), "+/", "-_"));
 }
 
 /**
  *
  * **Function -> base64_url_decode**
  *
- * EN-US: Converts a base64 encoded string to one without encoding.
+ * EN-US: Returns the result of removing the `Base64Url` encoding from the text.
  *
- * PT-BR: Converte uma string codificada em base64 em uma sem codificação.
+ * PT-BR: Retorna o resultado da remoção da codificação `Base64Url` do texto.
  *
- * @param string $input
+ * @param string $data
  * @return string
  */
-function base64_url_decode(string $input) :string
+function base64_url_decode(string $data): string
 {
-    return str_replace(['+', '/', '='], ['-', '_', ''], base64_decode($input));
+    $remainder = strlen($data) % 4;
+    if ($remainder !== 0) {
+        $data .= str_repeat("=", 4 - $remainder);
+    }
+    $decodedContent = base64_decode(strtr($data, "-_", "+/"), true);
+    if (!is_string($decodedContent)) {
+        throw new \Exception("Error while decoding from Base64: invalid characters used");
+    }
+    return $decodedContent;
 }
 
 /**
@@ -1168,7 +1104,7 @@ function I18N(string $lang, string $key, $default_value = null) {
 function I18N_lang_init()
 {
     if (session("lang") === null) {
-        session()->set("lang", "pt-br");
+        session()->set("lang", input_env("MAIN_LANGUAGE", "pt-br"));
         return true;
     }
     return false;

@@ -1,14 +1,19 @@
-# GitHub: https://github.com/matheusjohannaraujo/makemvcss
-# Country: Brasil
-# State: Pernambuco
-# Developer: Matheus Johann Araujo
-# Date: 2021-04-17
+### Environment Settings
 
+> EN-US: The `.env` file must contain the project settings, such as: access to the database, password used to sign JWT tokens, generation of routes of the methods existing in the controllers, among other things
+
+<hr>
+
+### Configurações de Ambiente
+
+> PT-BR: O arquivo `.env` deve conter as configurações do projeto, como: Acesso ao banco de dados, senha utilizada para assinar tokens JWT, geração de rotas dos métodos existentes nos controladores, dentre outras coisas
+
+```env
 #-----------------------------------------------------------------------------------------------------
 # EN-US: Current version number of the MakeMVCSS framework
 # PT-BR: Número da versão atual do framework MakeMVCSS
 #-----------------------------------------------------------------------------------------------------
-VERSION=4.2.8
+VERSION=4.2.6
 
 #-----------------------------------------------------------------------------------------------------
 # EN-US: Defines the timezone (GMT) to be used by the PHP application and Database
@@ -123,3 +128,6 @@ JWT_SECRET=password12345
 #-----------------------------------------------------------------------------------------------------
 DB_CONNECTION=sqlite
 DB_DATABASE=makemvcss
+```
+
+### [Back to the previous page](./DOC-EU.md) | [Voltar para página anterior](./DOC.md)
